@@ -1,11 +1,30 @@
 from machine import Pin, SPI
 import time
+from logger import Logger
 
-class CanHandler:
-    def __init__(self, spi, cs):
+class CANHandler:
+    def __init__(self, spi=None, cs=None):
+        self.logger = Logger()
+        if spi is None:
+            # Configuração padrão do SPI
+            spi = SPI(1, baudrate=10000000, polarity=0, phase=0)
+        if cs is None:
+            # Pino CS padrão
+            cs = Pin(5, Pin.OUT)
+            
         self.spi = spi
         self.cs = cs
-        self.setup()
+        
+    def init_can(self):
+        """Inicializa interface CAN"""
+        try:
+            self.logger.info('can', 'Inicializando interface CAN...')
+            self.setup()
+            self.logger.info('can', 'Interface CAN inicializada')
+            return True
+        except Exception as e:
+            self.logger.error('can', f'Erro ao inicializar CAN: {e}')
+            return False
         
     def setup(self):
         """Configura o módulo MCP2515"""
