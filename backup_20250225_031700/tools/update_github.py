@@ -20,12 +20,6 @@ class GitHubUpdater:
             '.gitignore',
             'requirements.txt'
         ]
-        self.ignore_patterns = [
-            'esp32/firmware/*',
-            '*.bin',
-            '*.hex',
-            '*.elf'
-        ]
         
     def check_git(self):
         """Verifica se git está configurado"""
@@ -95,53 +89,10 @@ class GitHubUpdater:
             print(f"❌ Erro no backup: {e}")
             return False
         
-    def check_modified_files(self):
-        """Verifica arquivos modificados"""
-        try:
-            print("\n🔍 Verificando modificações...")
-            
-            # Executa git status
-            result = subprocess.run(
-                ['git', 'status', '--porcelain'],
-                capture_output=True,
-                text=True
-            )
-            
-            modified_files = []
-            untracked_files = []
-            
-            # Analisa saída do git status
-            for line in result.stdout.split('\n'):
-                if line:
-                    status = line[:2]
-                    file_path = line[3:]
-                    
-                    # Ignora arquivos de firmware e backup
-                    if any(pattern.replace('*', '') in file_path 
-                          for pattern in self.ignore_patterns):
-                        continue
-                        
-                    # M: Modified, A: Added, ??: Untracked
-                    if status.strip() == 'M':
-                        modified_files.append(file_path)
-                        print(f"📝 Modificado: {file_path}")
-                    elif status == '??':
-                        untracked_files.append(file_path)
-                        print(f"➕ Novo: {file_path}")
-                        
-            return modified_files, untracked_files
-            
-        except Exception as e:
-            print(f"❌ Erro ao verificar modificações: {e}")
-            return [], []
-        
     def update_github(self):
         """Atualiza repositório no GitHub"""
         try:
             print("\n🚀 Atualizando GitHub...")
-            
-            # Verifica arquivos modificados
-            modified_files, untracked_files = self.check_modified_files()
             
             # Adiciona arquivos principais
             for file in self.main_files:
@@ -153,19 +104,7 @@ class GitHubUpdater:
                 subprocess.run(['git', 'add', file])
                 print(f"✅ Adicionado: {file}")
                 
-            # Adiciona arquivos modificados
-            for file in modified_files + untracked_files:
-                if file not in self.main_files:
-                    subprocess.run(['git', 'add', file])
-                    print(f"✅ Adicionado: {file}")
-            
-            # Prepara mensagem de commit
-            changes = []
-            if modified_files:
-                changes.extend([f"- {f}: Atualizado" for f in modified_files])
-            if untracked_files:
-                changes.extend([f"+ {f}: Novo arquivo" for f in untracked_files])
-                
+            # Commit
             commit_msg = f"""Atualização Monitor John Deere {datetime.now().strftime('%Y-%m-%d %H:%M')}:
 
 - web_server.py: Servidor web funcional
@@ -174,12 +113,11 @@ class GitHubUpdater:
 - main.py: Programa principal
 - upload_files.py: Ferramenta de upload
 - update_github.py: Script de atualização
++ Documentação completa"""
 
-Mudanças detectadas:
-{chr(10).join(changes)}"""
-
-            # Commit e push
             subprocess.run(['git', 'commit', '-m', commit_msg])
+            
+            # Push
             subprocess.run(['git', 'push', 'origin', 'main'])
             
             print("\n✅ GitHub atualizado com sucesso!")
