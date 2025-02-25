@@ -1,20 +1,37 @@
-from machine import Pin, SPI
-from web_server import WebServer
 from wifi_manager import WifiManager
-from can_handler import CanHandler
+from can_handler import CANHandler
+from web_server import WebServer
+from logger import Logger
 
 def main():
-    # Configuração do CAN Bus
-    spi = SPI(1, baudrate=10000000, polarity=0, phase=0)
-    cs = Pin(5, Pin.OUT)
-    can_handler = CanHandler(spi, cs)
-    
-    # Configuração do WiFi
-    wifi_manager = WifiManager()
-    
-    # Configuração do Servidor Web
-    web_server = WebServer(wifi_manager, can_handler)
-    web_server.start()
+    try:
+        logger = Logger()
+        logger.info('main', 'Iniciando sistema...')
+        
+        # Inicializa WiFi
+        wifi = WifiManager()
+        
+        # Inicializa CAN com retry
+        can = CANHandler()
+        if not can.init_can():
+            logger.error('main', 'Falha ao inicializar CAN')
+            return
+            
+        # Inicializa servidor
+        server = WebServer(wifi, can)
+        
+        # Registra handlers de cleanup
+        def cleanup():
+            server.cleanup()
+            wifi.cleanup()
+            
+        # Inicia servidor
+        server.start()
+        
+    except Exception as e:
+        logger.error('main', f'Erro fatal: {e}')
+    finally:
+        cleanup()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main() 
