@@ -3,7 +3,15 @@
 Monitor de Implementos Agrícolas John Deere usando protocolo ISO BUS/J1939
 
 ## ⚠️ IMPORTANTE: Firmware ESP32
-Para o funcionamento correto do sistema, você precisa do firmware do ESP32. 
+
+### 1. Firmware MicroPython
+Baixe a última versão do firmware MicroPython para ESP32:
+- 📥 [MicroPython para ESP32 GENERIC](https://micropython.org/download/ESP32_GENERIC/)
+- Versão recomendada: v1.24.1 ou superior
+- Arquivo: `ESP32_GENERIC-20241129-v1.24.1.bin`
+
+### 2. Firmware Monitor
+Para o funcionamento correto do sistema, você precisa do firmware do Monitor. 
 Por questões de segurança, ele não está no GitHub.
 
 **Antes de usar:**
