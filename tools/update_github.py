@@ -20,6 +20,12 @@ class GitHubUpdater:
             '.gitignore',
             'requirements.txt'
         ]
+        self.ignore_patterns = [
+            'esp32/firmware/*',
+            '*.bin',
+            '*.hex',
+            '*.elf'
+        ]
         
     def check_git(self):
         """Verifica se git está configurado"""
