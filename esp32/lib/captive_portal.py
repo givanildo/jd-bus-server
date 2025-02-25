@@ -74,6 +74,16 @@ class CaptivePortal:
             width: 100%;
         }
         
+        #password {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            display: none;  /* Campo senha inicialmente oculto */
+        }
+        
         .password-toggle {
             position: absolute;
             right: 10px;
@@ -82,6 +92,7 @@ class CaptivePortal:
             cursor: pointer;
             color: #666;
             user-select: none;
+            display: none;  /* Ícone olho inicialmente oculto */
         }
         
         #status-modal {
@@ -203,7 +214,6 @@ class CaptivePortal:
             const modal = document.getElementById('status-modal');
             const backdrop = document.getElementById('modal-backdrop');
             const message = document.getElementById('modal-message');
-            const ipInfo = document.getElementById('modal-ip');
             
             if (!ssid) {
                 status.textContent = 'Selecione uma rede';
@@ -213,8 +223,18 @@ class CaptivePortal:
             // Mostra modal
             modal.style.display = 'block';
             backdrop.style.display = 'block';
-            message.textContent = `Conectando à rede "${ssid}"...`;
-            ipInfo.style.display = 'none';
+            message.innerHTML = `
+                <div class="spinner"></div>
+                <p>Conectando à rede "${ssid}"...</p>
+                <p style="color: #666; font-size: 0.9em;">
+                    O ponto de acesso será desativado.
+                    <br>Por favor, aguarde alguns segundos e
+                    <br>procure o dispositivo na rede local.
+                    <br>
+                    <br><strong>Dica:</strong> Use o monitor serial
+                    <br>para ver o novo endereço IP.
+                </p>
+            `;
             
             try {
                 const response = await fetch('/connect', {
@@ -223,27 +243,10 @@ class CaptivePortal:
                     body: JSON.stringify({ssid, password})
                 });
                 
-                const data = await response.json();
+                // Não precisa tratar resposta pois AP será desfeito
                 
-                if (data.status === 'success') {
-                    message.textContent = 'Conectado com sucesso!';
-                    document.getElementById('device-ip').textContent = data.ip;
-                    document.getElementById('device-ip-link').textContent = data.ip;
-                    ipInfo.style.display = 'block';
-                    
-                    // Aguarda 10 segundos antes de redirecionar
-                    setTimeout(() => {
-                        window.location.href = `http://${data.ip}`;
-                    }, 10000);
-                } else {
-                    message.textContent = 'Erro ao conectar. Verifique a senha.';
-                    setTimeout(() => {
-                        modal.style.display = 'none';
-                        backdrop.style.display = 'none';
-                    }, 3000);
-                }
             } catch (error) {
-                message.textContent = 'Erro ao conectar. Tente novamente.';
+                message.textContent = 'Erro ao conectar. Verifique a senha.';
                 setTimeout(() => {
                     modal.style.display = 'none';
                     backdrop.style.display = 'none';

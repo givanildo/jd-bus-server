@@ -46,12 +46,24 @@ class WifiManager:
             self.sta_if.active(True)
             self.sta_if.connect(ssid, password)
             
-            # Salva configuração
-            config = {'ssid': ssid, 'password': password}
-            with open(self.config_file, 'w') as f:
-                json.dump(config, f)
-                
-            return True
+            # Aguarda conexão
+            for _ in range(20):  # 10 segundos timeout
+                if self.sta_if.isconnected():
+                    ip = self.sta_if.ifconfig()[0]
+                    self.logger.info('wifi', f'Conectado à rede {ssid}')
+                    self.logger.info('wifi', f'IP na rede local: {ip}')
+                    
+                    # Salva configuração
+                    config = {'ssid': ssid, 'password': password}
+                    with open(self.config_file, 'w') as f:
+                        json.dump(config, f)
+                        
+                    return True
+                time.sleep(0.5)
+            
+            self.logger.error('wifi', f'Timeout ao conectar em {ssid}')
+            return False
+            
         except Exception as e:
             self.logger.error('wifi', f'Erro ao conectar: {e}')
             return False
