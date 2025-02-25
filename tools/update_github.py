@@ -3,6 +3,7 @@ import subprocess
 import sys
 import shutil  # Para operações de arquivo multiplataforma
 from datetime import datetime
+import fnmatch
 
 class GitHubUpdater:
     def __init__(self):
@@ -99,55 +100,47 @@ class GitHubUpdater:
             return False
         
     def check_modified_files(self):
-        """Verifica arquivos modificados com mais detalhes"""
+        """Verifica arquivos modificados"""
         try:
             print("\n🔍 Verificando modificações...")
             
-            # Verifica arquivos modificados
+            # Lista de padrões para ignorar
+            ignore_patterns = [
+                'backup*',
+                '*.bak',
+                '*~',
+                '*.backup',
+                'backup_*',
+                '*.old'
+            ]
+            
+            # Verifica arquivos modificados excluindo backups
             result = subprocess.run(
-                ['git', 'status', '--porcelain', '-u'],  # -u mostra arquivos não rastreados
+                ['git', 'status', '--porcelain', '-u'],
                 capture_output=True,
                 text=True
             )
             
             modified = []
-            untracked = []
-            staged = []
-            
             for line in result.stdout.split('\n'):
                 if not line:
                     continue
                     
-                status = line[:2]
                 file_path = line[3:]
                 
-                # Ignora arquivos de firmware e backup
-                if any(pattern.replace('*', '') in file_path 
-                      for pattern in self.ignore_patterns):
+                # Ignora arquivos de backup
+                if any(fnmatch.fnmatch(file_path, pattern) 
+                      for pattern in ignore_patterns):
                     continue
                     
-                # M: Modified, A: Added, ??: Untracked, R: Renamed
-                if status == 'M ':
-                    modified.append(file_path)
-                    print(f"📝 Modificado: {file_path}")
-                elif status == ' M':
-                    modified.append(file_path)
-                    print(f"📝 Modificado (não staged): {file_path}")
-                elif status == 'A ':
-                    staged.append(file_path)
-                    print(f"✨ Novo (staged): {file_path}")
-                elif status == '??':
-                    untracked.append(file_path)
-                    print(f"➕ Não rastreado: {file_path}")
-                elif status.startswith('R'):
-                    modified.append(file_path)
-                    print(f"♻️  Renomeado: {file_path}")
-                    
-            return modified, untracked, staged
+                modified.append(file_path)
+                print(f"📝 Modificado: {file_path}")
+                
+            return modified
             
         except Exception as e:
             print(f"❌ Erro ao verificar modificações: {e}")
-            return [], [], []
+            return []
         
     def update_github(self):
         """Atualiza repositório no GitHub com verificação melhorada"""
@@ -155,14 +148,14 @@ class GitHubUpdater:
             print("\n🚀 Atualizando GitHub...")
             
             # Verifica arquivos modificados
-            modified, untracked, staged = self.check_modified_files()
+            modified = self.check_modified_files()
             
-            if not any([modified, untracked, staged]):
+            if not modified:
                 print("✨ Nenhuma modificação encontrada!")
                 return True
             
             # Adiciona todos os arquivos modificados
-            for file in modified + untracked:
+            for file in modified:
                 try:
                     subprocess.run(['git', 'add', file], check=True)
                     print(f"✅ Adicionado: {file}")
@@ -170,13 +163,7 @@ class GitHubUpdater:
                     print(f"❌ Erro ao adicionar {file}: {e}")
             
             # Prepara mensagem de commit
-            changes = []
-            if modified:
-                changes.extend([f"- {f}: Atualizado" for f in modified])
-            if untracked:
-                changes.extend([f"+ {f}: Novo arquivo" for f in untracked])
-            if staged:
-                changes.extend([f"* {f}: Staged" for f in staged])
+            changes = [f"- {f}: Atualizado" for f in modified]
             
             commit_msg = f"""Atualização Monitor John Deere {datetime.now().strftime('%Y-%m-%d %H:%M')}:
 
