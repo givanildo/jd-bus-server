@@ -14,8 +14,8 @@ Baixe a última versão do firmware MicroPython para ESP32:
 Para o funcionamento correto do sistema, você precisa do firmware do Monitor. 
 Por questões de segurança, ele não está no GitHub.
 
-**Antes de usar:**
-1. Solicite o firmware pelo email: givanildobrunetta@gmail.com
+**Antes de usar:*
+1. instale um genericfile microphyton no esp32.
 2. Coloque os arquivos em: `esp32/firmware/`
 3. Execute: `python tools/upload_files.py`
 
